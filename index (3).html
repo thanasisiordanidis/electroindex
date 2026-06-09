@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ElectroIndex</title>
+<style>
+:root {
+  --bg:#060d1a; --surface:#0b1628; --panel:#0f1e35; --border:#1a3a5c;
+  --accent:#00d4ff; --accent2:#00ff88; --accent3:#ff6b35;
+  --text:#c8dff0; --dim:#5a7a9a; --danger:#ff3b5c;
+  --mono:'Courier New',Courier,monospace;
+  --ui:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Arial,sans-serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:var(--ui);background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
+#pcb{position:fixed;inset:0;opacity:.06;pointer-events:none;z-index:0;}
+.wrap{position:relative;z-index:2;max-width:1280px;margin:0 auto;padding:0 20px;}
+header{background:rgba(6,13,26,.97);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;}
+.hdr{display:-webkit-flex;display:flex;align-items:center;justify-content:space-between;padding:12px 20px;max-width:1280px;margin:0 auto;flex-wrap:wrap;gap:8px;}
+.logo{display:-webkit-flex;display:flex;align-items:center;gap:10px;}
+.logo-box{width:38px;height:38px;border:2px solid var(--accent);border-radius:8px;display:-webkit-flex;display:flex;align-items:center;justify-content:center;}
+.logo-name{font-family:var(--mono);font-size:1.3rem;color:var(--accent);letter-spacing:2px;}
+.logo-sub{font-size:.65rem;color:var(--dim);letter-spacing:3px;text-transform:uppercase;}
+nav{display:-webkit-flex;display:flex;gap:6px;flex-wrap:wrap;}
+.nb{background:transparent;border:1px solid var(--border);color:var(--dim);padding:7px 15px;border-radius:6px;cursor:pointer;font-family:var(--ui);font-size:.82rem;transition:all .2s;}
+.nb:hover,.nb.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.nb.adm{border-color:var(--accent3);color:var(--accent3);}
+.nb.adm:hover,.nb.adm.on{background:rgba(255,107,53,.1);border-color:var(--accent3);color:var(--accent3);}
+.sec{display:none;padding:36px 0;}
+.sec.on{display:block;}
+.stitle{font-size:.7rem;letter-spacing:4px;text-transform:uppercase;color:var(--accent);margin-bottom:6px;font-family:var(--mono);}
+.shead{font-size:1.8rem;font-weight:700;color:#e0f4ff;margin-bottom:28px;}
+.shead span{color:var(--accent);}
+.btn{display:inline-flex;align-items:center;gap:6px;background:rgba(0,212,255,.1);border:1px solid var(--accent);color:var(--accent);padding:10px 20px;border-radius:8px;cursor:pointer;font-family:var(--ui);font-size:.85rem;font-weight:600;transition:all .2s;}
+.btn:hover{background:rgba(0,212,255,.22);}
+.btn.g{border-color:var(--accent2);color:var(--accent2);background:rgba(0,255,136,.08);}
+.btn.g:hover{background:rgba(0,255,136,.2);}
+.btn.r{border-color:var(--danger);color:var(--danger);background:rgba(255,59,92,.07);}
+.btn.r:hover{background:rgba(255,59,92,.18);}
+.inp,.ta,.sel{width:100%;background:var(--surface);border:1px solid var(--border);color:var(--text);padding:10px 14px;border-radius:8px;font-family:var(--ui);font-size:.88rem;outline:none;transition:border-color .2s;}
+.inp:focus,.ta:focus,.sel:focus{border-color:var(--accent);}
+.ta{resize:vertical;min-height:90px;}
+.lbl{display:block;font-size:.7rem;letter-spacing:2px;color:var(--dim);text-transform:uppercase;margin-bottom:5px;font-family:var(--mono);}
+.fg{margin-bottom:14px;}
+.grid{display:-webkit-flex;display:flex;flex-wrap:wrap;gap:18px;}
+.card{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;transition:all .3s;width:calc(33.333% - 13px);min-width:260px;flex:1;}
+@media(max-width:900px){.card{width:calc(50% - 9px);}}
+@media(max-width:580px){.card{width:100%;}}
+.card:hover{border-color:var(--accent);box-shadow:0 6px 28px rgba(0,212,255,.13);transform:translateY(-2px);}
+.cthumb{height:175px;background:var(--surface);display:-webkit-flex;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border);position:relative;overflow:hidden;}
+.cthumb svg{width:100%;height:100%;display:block;}
+.cthumb img{width:100%;height:100%;object-fit:cover;}
+.cbadge{position:absolute;top:8px;right:8px;background:rgba(0,212,255,.15);border:1px solid var(--accent);color:var(--accent);font-size:.63rem;padding:3px 9px;border-radius:10px;font-family:var(--mono);}
+.cbadge.new{border-color:var(--accent2);color:var(--accent2);background:rgba(0,255,136,.1);}
+.cbody{padding:16px;}
+.ccat{font-size:.68rem;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-family:var(--mono);margin-bottom:5px;}
+.ctitle{font-size:.95rem;font-weight:600;color:#e0f4ff;margin-bottom:7px;}
+.cdesc{font-size:.78rem;color:var(--dim);line-height:1.5;margin-bottom:12px;}
+.cmeta{display:-webkit-flex;display:flex;justify-content:space-between;font-size:.72rem;color:var(--dim);font-family:var(--mono);margin-bottom:12px;}
+.ccode{background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.3);color:var(--accent);padding:2px 9px;border-radius:4px;}
+.cbtns{display:-webkit-flex;display:flex;gap:8px;}
+.cbtn{flex:1;background:transparent;border:1px solid var(--border);color:var(--dim);padding:7px;border-radius:6px;cursor:pointer;font-size:.75rem;font-family:var(--ui);transition:all .2s;}
+.cbtn:hover{border-color:var(--accent);color:var(--accent);}
+.cbtn.dl:hover{border-color:var(--accent2);color:var(--accent2);}
+.sbar{display:-webkit-flex;display:flex;gap:10px;margin-bottom:24px;flex-wrap:wrap;}
+.sbar .inp{max-width:380px;}
+.tags{display:-webkit-flex;display:flex;gap:8px;flex-wrap:wrap;margin-bottom:24px;}
+.tag{background:var(--panel);border:1px solid var(--border);color:var(--dim);padding:5px 14px;border-radius:20px;font-size:.78rem;cursor:pointer;transition:all .2s;font-family:var(--mono);}
+.tag:hover,.tag.on{border-color:var(--accent2);color:var(--accent2);background:rgba(0,255,136,.08);}
+.tbl{width:100%;border-collapse:collapse;background:var(--panel);border-radius:12px;overflow:hidden;border:1px solid var(--border);}
+.tbl th{background:var(--surface);padding:13px 16px;text-align:left;font-size:.68rem;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-family:var(--mono);border-bottom:1px solid var(--border);}
+.tbl td{padding:13px 16px;font-size:.83rem;border-bottom:1px solid rgba(26,58,92,.4);}
+.tbl tr:last-child td{border-bottom:none;}
+.tbl tr:hover td{background:rgba(0,212,255,.04);}
+.tbl-wrap{overflow-x:auto;}
+.cgrid{display:-webkit-flex;display:flex;flex-wrap:wrap;gap:24px;}
+.cleft{flex:1;min-width:260px;}
+.cright{flex:1;min-width:260px;}
+.ccard{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:22px;margin-bottom:18px;}
+.ccard h3{font-size:.7rem;letter-spacing:3px;text-transform:uppercase;color:var(--accent);font-family:var(--mono);margin-bottom:16px;}
+.ci{display:-webkit-flex;display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid rgba(26,58,92,.4);}
+.ci:last-child{border-bottom:none;}
+.ci-ico{width:36px;height:36px;border:1px solid var(--border);border-radius:8px;display:-webkit-flex;display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;}
+.ci-lbl{font-size:.65rem;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
+.ci-val{font-size:.88rem;color:var(--text);margin-top:2px;}
+.ci-val a{color:var(--accent);text-decoration:none;}
+.sgrid{display:-webkit-flex;display:flex;gap:24px;flex-wrap:wrap;}
+.snav{display:-webkit-flex;display:flex;flex-direction:column;gap:4px;min-width:180px;}
+.sni{background:var(--panel);border:1px solid transparent;color:var(--dim);padding:11px 15px;border-radius:8px;cursor:pointer;font-size:.83rem;transition:all .2s;text-align:left;font-family:var(--ui);}
+.sni:hover,.sni.on{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08);}
+.spanel{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:26px;flex:1;}
+.spanel h3{font-size:1rem;font-weight:600;color:#e0f4ff;margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--border);}
+.srow{display:-webkit-flex;display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-bottom:1px solid rgba(26,58,92,.35);}
+.srow:last-of-type{border-bottom:none;}
+.srow label{font-size:.88rem;color:var(--text);display:block;}
+.srow small{font-size:.73rem;color:var(--dim);margin-top:2px;display:block;}
+.tog{width:44px;height:22px;background:var(--surface);border:1px solid var(--border);border-radius:11px;position:relative;cursor:pointer;transition:all .3s;flex-shrink:0;}
+.tog.on{background:rgba(0,255,136,.2);border-color:var(--accent2);}
+.tog::after{content:'';width:16px;height:16px;background:var(--dim);border-radius:50%;position:absolute;top:2px;left:2px;transition:all .3s;}
+.tog.on::after{left:24px;background:var(--accent2);}
+.abox{max-width:400px;margin:50px auto;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:36px;text-align:center;}
+.abox h2{font-family:var(--mono);font-size:1.2rem;color:var(--accent3);letter-spacing:2px;margin-bottom:8px;}
+.abox p{color:var(--dim);font-size:.83rem;margin-bottom:26px;}
+.adash{display:none;}
+.ahdr{background:rgba(255,107,53,.08);border:1px solid rgba(255,107,53,.3);border-radius:10px;padding:13px 18px;margin-bottom:24px;display:-webkit-flex;display:flex;justify-content:space-between;align-items:center;color:var(--accent3);font-family:var(--mono);font-size:.83rem;}
+.atabs{display:-webkit-flex;display:flex;gap:8px;margin-bottom:22px;flex-wrap:wrap;}
+.stats{display:-webkit-flex;display:flex;flex-wrap:wrap;gap:14px;margin-bottom:24px;}
+.stat{background:var(--panel);border:1px solid var(--border);border-radius:10px;padding:18px;text-align:center;flex:1;min-width:110px;}
+.stat-n{font-size:1.9rem;font-weight:700;color:var(--accent);font-family:var(--mono);}
+.stat-l{font-size:.68rem;color:var(--dim);letter-spacing:2px;text-transform:uppercase;margin-top:4px;}
+.pbox{background:var(--panel);border:1px solid var(--border);border-radius:12px;overflow:hidden;}
+.phdr{padding:14px 18px;border-bottom:1px solid var(--border);display:-webkit-flex;display:flex;justify-content:space-between;align-items:center;}
+.phdr h3{font-size:.88rem;color:var(--text);font-weight:600;}
+.adm-tab{display:none;}
+.adm-tab.on{display:block;}
+.dropzone{border:2px dashed var(--border);border-radius:10px;padding:20px;text-align:center;cursor:pointer;transition:all .2s;background:var(--surface);}
+.dropzone:hover{border-color:var(--accent);}
+.dropzone p{color:var(--dim);font-size:.83rem;margin-top:8px;}
+.fprev{display:none;margin-top:10px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
+.fprev.show{display:-webkit-flex;display:flex;align-items:center;gap:10px;}
+.overlay{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.75);z-index:500;display:none;align-items:center;justify-content:center;}
+.overlay.show{display:-webkit-flex;display:flex;}
+.modal{background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:30px;max-width:580px;width:92%;position:relative;max-height:90vh;overflow-y:auto;}
+.modal h2{font-size:1.1rem;margin-bottom:18px;color:#e0f4ff;}
+.mc{position:absolute;top:14px;right:14px;background:none;border:none;color:var(--dim);font-size:1.3rem;cursor:pointer;}
+.mgrid{display:-webkit-flex;display:flex;flex-wrap:wrap;gap:12px;}
+.mgrid .half{width:calc(50% - 6px);}
+.mgrid .full{width:100%;}
+.toast{position:fixed;bottom:24px;right:24px;background:var(--panel);border:1px solid var(--accent2);color:var(--accent2);padding:13px 22px;border-radius:10px;font-size:.83rem;font-family:var(--mono);z-index:9999;transform:translateX(220%);transition:transform .4s cubic-bezier(.34,1.56,.64,1);}
+.toast.show{transform:translateX(0);}
+.hidden{display:none!important;}
+.loading{text-align:center;padding:60px;color:var(--dim);font-family:var(--mono);}
+</style>
+</head>
+<body>
+
+<svg id="pcb" viewBox="0 0 1440 900" preserveAspectRatio="xMidYMid slice" xmlns="http://www.w3.org/2000/svg">
+  <defs><pattern id="gg" width="40" height="40" patternUnits="userSpaceOnUse"><path d="M40 0L0 0 0 40" fill="none" stroke="#00d4ff" stroke-width=".5"/></pattern></defs>
+  <rect width="100%" height="100%" fill="url(#gg)"/>
+  <path d="M0 200H300V100H600V300H900V150H1440" fill="none" stroke="#00d4ff" stroke-width="2"/>
+  <path d="M0 500H200V400H500V600H800V450H1100V700H1440" fill="none" stroke="#00ff88" stroke-width="1.5"/>
+  <rect x="280" y="192" width="40" height="16" rx="2" fill="none" stroke="#00d4ff" stroke-width="1.5"/>
+  <circle cx="300" cy="200" r="5" fill="#00d4ff" opacity=".8"/>
+  <circle cx="600" cy="100" r="5" fill="#00d4ff" opacity=".8"/>
+  <circle cx="200" cy="500" r="5" fill="#00ff88" opacity=".8"/>
+  <circle cx="500" cy="600" r="5" fill="#00ff88" opacity=".8"/>
+</svg>
+
+<header>
+  <div class="hdr">
+    <div class="logo">
+      <div class="logo-box">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="none"><rect x="3" y="7" width="14" height="6" rx="1" stroke="#00d4ff" stroke-width="1.5"/><line x1="0" y1="10" x2="3" y2="10" stroke="#00d4ff" stroke-width="1.5"/><line x1="17" y1="10" x2="20" y2="10" stroke="#00d4ff" stroke-width="1.5"/><line x1="6" y1="5" x2="6" y2="2" stroke="#00d4ff" stroke-width="1.5"/><line x1="14" y1="5" x2="14" y2="2" stroke="#00d4ff" stroke-width="1.5"/><line x1="6" y1="15" x2="6" y2="18" stroke="#00d4ff" stroke-width="1.5"/><line x1="14" y1="15" x2="14" y2="18" stroke="#00d4ff" stroke-width="1.5"/></svg>
+      </div>
+      <div>
+        <div class="logo-name">ELECTRO<span style="color:#00ff88">INDEX</span></div>
+        <div class="logo-sub">Κατάλογος Σχεδίων</div>
+      </div>
+    </div>
+    <nav>
+      <button class="nb on" onclick="goTo('sch',this)">📐 Σχέδια</button>
+      <button class="nb" onclick="goTo('idx',this)">📋 Ευρετήριο</button>
+      <button class="nb" onclick="goTo('con',this)">📞 Επικοινωνία</button>
+      <button class="nb" onclick="goTo('set',this)">⚙️ Ρυθμίσεις</button>
+      <button class="nb adm" onclick="goTo('adm',this)">🔐 Admin</button>
+    </nav>
+  </div>
+</header>
+
+<!-- SCHEMATICS -->
+<div class="sec on" id="sec-sch">
+  <div class="wrap">
+    <div class="stitle">// ΒΑΣΗ ΔΕΔΟΜΕΝΩΝ</div>
+    <div class="shead">Ηλεκτρονικά <span>Σχέδια</span></div>
+    <div class="sbar">
+      <input class="inp" id="q" type="text" placeholder="Αναζήτηση..." oninput="filterCards()">
+      <select class="sel" id="cf" style="width:auto" onchange="filterCards()">
+        <option value="">Όλες οι κατηγορίες</option>
+        <option>Τροφοδοτικό</option><option>Ενισχυτής</option>
+        <option>Microcontroller</option><option>Αισθητήρας</option><option>RF</option>
+      </select>
+    </div>
+    <div class="tags">
+      <span class="tag on" onclick="setTag(this,'')">Όλα</span>
+      <span class="tag" onclick="setTag(this,'Τροφοδοτικό')">Τροφοδοτικό</span>
+      <span class="tag" onclick="setTag(this,'Ενισχυτής')">Ενισχυτής</span>
+      <span class="tag" onclick="setTag(this,'Microcontroller')">Microcontroller</span>
+      <span class="tag" onclick="setTag(this,'Αισθητήρας')">Αισθητήρας</span>
+      <span class="tag" onclick="setTag(this,'RF')">RF</span>
+    </div>
+    <div id="cards"><div class="loading">// Φόρτωση σχεδίων...</div></div>
+  </div>
+</div>
+
+<!-- INDEX -->
+<div class="sec" id="sec-idx">
+  <div class="wrap">
+    <div class="stitle">// ΚΑΤΑΛΟΓΟΣ</div>
+    <div class="shead">Ευρετήριο <span>Σχεδίων</span></div>
+    <div class="sbar"><input class="inp" id="iq" type="text" placeholder="Αναζήτηση..." oninput="filterIdx()"></div>
+    <div class="tbl-wrap">
+      <table class="tbl">
+        <thead><tr><th>#</th><th>Κωδικός</th><th>Τίτλος</th><th>Κατηγορία</th><th>Έκδοση</th><th>Ημ/νία</th><th>Αρχείο</th></tr></thead>
+        <tbody id="idxBody"><tr><td colspan="7" style="text-align:center;color:var(--dim)">Φόρτωση...</td></tr></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- CONTACT -->
+<div class="sec" id="sec-con">
+  <div class="wrap">
+    <div class="stitle">// ΕΠΙΚΟΙΝΩΝΙΑ</div>
+    <div class="shead">Στοιχεία <span>Επικοινωνίας</span></div>
+    <div class="cgrid">
+      <div class="cleft">
+        <div class="ccard">
+          <h3>// Υπεύθυνος</h3>
+          <div class="ci"><div class="ci-ico">👤</div><div><div class="ci-lbl">Ονοματεπώνυμο</div><div class="ci-val" id="d-name">—</div></div></div>
+        </div>
+        <div class="ccard">
+          <h3>// Τηλέφωνα</h3>
+          <div class="ci"><div class="ci-ico">📞</div><div><div class="ci-lbl">Κεντρικό</div><div class="ci-val"><a id="d-phone" href="#">—</a></div></div></div>
+          <div class="ci"><div class="ci-ico">📱</div><div><div class="ci-lbl">Κινητό</div><div class="ci-val"><a id="d-mobile" href="#">—</a></div></div></div>
+          <div class="ci"><div class="ci-ico">📠</div><div><div class="ci-lbl">Fax</div><div class="ci-val" id="d-fax">—</div></div></div>
+        </div>
+        <div class="ccard">
+          <h3>// Email & Διεύθυνση</h3>
+          <div class="ci"><div class="ci-ico">✉️</div><div><div class="ci-lbl">Email</div><div class="ci-val"><a id="d-email1" href="#">—</a></div></div></div>
+          <div class="ci"><div class="ci-ico">🔧</div><div><div class="ci-lbl">Τεχνική υποστήριξη</div><div class="ci-val"><a id="d-email2" href="#">—</a></div></div></div>
+          <div class="ci"><div class="ci-ico">🌐</div><div><div class="ci-lbl">Ιστοσελίδα</div><div class="ci-val" id="d-web">—</div></div></div>
+          <div class="ci"><div class="ci-ico">📍</div><div><div class="ci-lbl">Διεύθυνση</div><div class="ci-val" id="d-addr">—</div></div></div>
+          <div class="ci"><div class="ci-ico">🕐</div><div><div class="ci-lbl">Ώρες</div><div class="ci-val" id="d-hours">—</div></div></div>
+        </div>
+      </div>
+      <div class="cright">
+        <div class="ccard">
+          <h3>// Αποστολή Μηνύματος</h3>
+          <div class="fg"><label class="lbl">Όνομα</label><input class="inp" id="msg-name" type="text" placeholder="Το όνομά σας"></div>
+          <div class="fg"><label class="lbl">Email</label><input class="inp" id="msg-email" type="email" placeholder="email@example.com"></div>
+          <div class="fg"><label class="lbl">Θέμα</label><input class="inp" id="msg-subject" type="text" placeholder="Θέμα μηνύματος"></div>
+          <div class="fg"><label class="lbl">Μήνυμα</label><textarea class="ta" id="msg-body" placeholder="Γράψτε το μήνυμά σας..."></textarea></div>
+          <button class="btn g" style="width:100%" onclick="sendMsg()">▶ Αποστολή</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- SETTINGS -->
+<div class="sec" id="sec-set">
+  <div class="wrap">
+    <div class="stitle">// ΡΥΘΜΙΣΕΙΣ</div>
+    <div class="shead"><span>Ρυθμίσεις</span> Εφαρμογής</div>
+    <div class="sgrid">
+      <div class="snav">
+        <button class="sni on" onclick="setSP('gen',this)">Γενικές</button>
+        <button class="sni" onclick="setSP('disp',this)">Εμφάνιση</button>
+        <button class="sni" onclick="setSP('notif',this)">Ειδοποιήσεις</button>
+        <button class="sni" onclick="setSP('sec2',this)">Ασφάλεια</button>
+      </div>
+      <div>
+        <div class="spanel" id="sp-gen">
+          <h3>Γενικές Ρυθμίσεις</h3>
+          <div class="srow"><div><label>Γλώσσα</label><small>Γλώσσα διεπαφής</small></div><select class="sel" style="width:130px"><option>Ελληνικά</option><option>English</option></select></div>
+          <div class="srow"><div><label>Αυτόματη αποθήκευση</label></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="srow"><div><label>Εμφάνιση κωδικών</label></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+          <div style="margin-top:18px"><button class="btn g" onclick="toast('✓ Αποθηκεύτηκε')">Αποθήκευση</button></div>
+        </div>
+        <div class="spanel hidden" id="sp-disp">
+          <h3>Εμφάνιση</h3>
+          <div class="srow"><div><label>Σκοτεινό θέμα</label></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="srow"><div><label>Φόντο PCB</label></div><div class="tog on" onclick="toggleBg(this)"></div></div>
+          <div style="margin-top:18px"><button class="btn g" onclick="toast('✓ Αποθηκεύτηκε')">Αποθήκευση</button></div>
+        </div>
+        <div class="spanel hidden" id="sp-notif">
+          <h3>Ειδοποιήσεις</h3>
+          <div class="srow"><div><label>Email ειδοποιήσεις</label></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+          <div class="srow"><div><label>Νέα σχέδια</label></div><div class="tog on" onclick="this.classList.toggle('on')"></div></div>
+          <div style="margin-top:18px"><button class="btn g" onclick="toast('✓ Αποθηκεύτηκε')">Αποθήκευση</button></div>
+        </div>
+        <div class="spanel hidden" id="sp-sec2">
+          <h3>Ασφάλεια</h3>
+          <div class="fg"><label class="lbl">Τρέχον Κωδικός Admin</label><input class="inp" type="password" id="oldPass" placeholder="••••••••"></div>
+          <div class="fg"><label class="lbl">Νέος Κωδικός</label><input class="inp" type="password" id="newPass" placeholder="••••••••"></div>
+          <div class="fg"><label class="lbl">Επαλήθευση</label><input class="inp" type="password" id="confPass" placeholder="••••••••"></div>
+          <div style="margin-top:18px"><button class="btn g" onclick="changePass()">Αλλαγή Κωδικού</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ADMIN -->
+<div class="sec" id="sec-adm">
+  <div class="wrap">
+    <div class="stitle">// ΔΙΑΧΕΙΡΙΣΤΗΣ</div>
+    <div class="shead">Admin <span>Panel</span></div>
+    <div class="abox" id="loginBox">
+      <h2>🔐 ADMIN ACCESS</h2>
+      <p>Εισάγετε τα στοιχεία σύνδεσης</p>
+      <div class="fg"><input class="inp" type="text" id="auser" placeholder="Username"></div>
+      <div class="fg" style="margin-top:10px"><input class="inp" type="password" id="apass" placeholder="Password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+      <button class="btn" style="width:100%;margin-top:16px;border-color:var(--accent3);color:var(--accent3)" onclick="doLogin()">Σύνδεση</button>
+      <p style="margin-top:14px;font-size:.72rem;color:var(--dim)" id="loginHint">Demo: admin / 1234</p>
+    </div>
+    <div class="adash" id="dashBox">
+      <div class="ahdr">
+        <span>⚡ ADMIN — Καλώς ήρθατε, Administrator</span>
+        <button class="btn r" style="padding:6px 12px;font-size:.78rem" onclick="doLogout()">Αποσύνδεση</button>
+      </div>
+      <div class="atabs">
+        <button class="nb on" id="tab-sch" onclick="aTab('sch')">📐 Σχέδια</button>
+        <button class="nb" id="tab-ci" onclick="aTab('ci')">📍 Στοιχεία Επικοινωνίας</button>
+      </div>
+      <div class="adm-tab on" id="at-sch">
+        <div class="stats">
+          <div class="stat"><div class="stat-n" id="sTotal">0</div><div class="stat-l">Σχέδια</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--accent2)">5</div><div class="stat-l">Κατηγορίες</div></div>
+          <div class="stat"><div class="stat-n" style="color:var(--accent3)" id="sCats">0</div><div class="stat-l">Με Αρχείο</div></div>
+          <div class="stat"><div class="stat-n" style="color:#a78bfa" id="sNew">0</div><div class="stat-l">Νέα</div></div>
+        </div>
+        <div class="pbox">
+          <div class="phdr">
+            <h3>Διαχείριση Σχεδίων</h3>
+            <button class="btn g" style="padding:7px 16px;font-size:.8rem" onclick="openModal()">+ Προσθήκη</button>
+          </div>
+          <div class="tbl-wrap">
+            <table class="tbl">
+              <thead><tr><th>Κωδικός</th><th>Τίτλος</th><th>Κατηγορία</th><th>Αρχείο</th><th>Ενέργειες</th></tr></thead>
+              <tbody id="admBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+      <div class="adm-tab" id="at-ci">
+        <div class="pbox" style="padding:26px">
+          <p style="font-size:.75rem;color:var(--dim);margin-bottom:20px;font-family:var(--mono)">// Αποθηκεύεται στο Firebase — εμφανίζεται σε όλους τους επισκέπτες αμέσως</p>
+          <div style="display:-webkit-flex;display:flex;flex-wrap:wrap;gap:14px">
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">👤 Όνομα</label><input class="inp" id="ci-fn" type="text" placeholder="π.χ. Γιώργος"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">👤 Επίθετο</label><input class="inp" id="ci-ln" type="text" placeholder="π.χ. Παπαδόπουλος"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">📞 Κεντρικό Τηλέφωνο</label><input class="inp" id="ci-ph" type="text" placeholder="+30 210 123 4567"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">📱 Κινητό</label><input class="inp" id="ci-mb" type="text" placeholder="+30 690 123 4567"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">📠 Fax</label><input class="inp" id="ci-fx" type="text" placeholder="+30 210 123 4568"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">✉️ Email</label><input class="inp" id="ci-e1" type="email" placeholder="info@example.gr"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">🔧 Email Τεχνικής</label><input class="inp" id="ci-e2" type="email" placeholder="support@example.gr"></div>
+            <div class="fg" style="width:calc(50% - 7px);min-width:200px"><label class="lbl">🌐 Ιστοσελίδα</label><input class="inp" id="ci-wb" type="text" placeholder="www.example.gr"></div>
+            <div class="fg" style="width:100%"><label class="lbl">📍 Διεύθυνση</label><input class="inp" id="ci-ad" type="text" placeholder="Λεωφ. Αθηνών 100, Αθήνα"></div>
+            <div class="fg" style="width:100%"><label class="lbl">🕐 Ώρες Λειτουργίας</label><input class="inp" id="ci-hr" type="text" placeholder="Δευτ-Παρ 09:00-17:00"></div>
+          </div>
+          <div style="margin-top:18px;display:-webkit-flex;display:flex;gap:10px">
+            <button class="btn g" onclick="saveCI()">✓ Αποθήκευση στο Firebase</button>
+            <button class="btn" onclick="loadCIFields()">↺ Επαναφορά</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Modal -->
+<div class="overlay" id="modal">
+  <div class="modal">
+    <button class="mc" onclick="closeModal()">✕</button>
+    <h2 id="mhead">➕ Νέο Σχέδιο</h2>
+    <div class="mgrid">
+      <div class="fg full"><label class="lbl">Τίτλος</label><input class="inp" id="mT" type="text" placeholder="Τίτλος σχεδίου"></div>
+      <div class="fg half"><label class="lbl">Κατηγορία</label>
+        <select class="sel" id="mC"><option>Τροφοδοτικό</option><option>Ενισχυτής</option><option>Microcontroller</option><option>Αισθητήρας</option><option>RF</option></select>
+      </div>
+      <div class="fg half"><label class="lbl">Έκδοση</label><input class="inp" id="mV" type="text" placeholder="v1.0"></div>
+      <div class="fg full"><label class="lbl">Περιγραφή</label><textarea class="ta" id="mD" placeholder="Σύντομη περιγραφή..."></textarea></div>
+      <div class="fg full">
+        <label class="lbl">📎 Αρχείο (JPG ή PDF)</label>
+        <div class="dropzone" id="dz" onclick="document.getElementById('mF').click()"
+          ondragover="event.preventDefault();this.style.borderColor='var(--accent)'"
+          ondragleave="this.style.borderColor='var(--border)'"
+          ondrop="onDrop(event)">
+          <span style="font-size:2rem">📂</span>
+          <p id="dzLabel">Σύρε αρχείο ή κάνε κλικ<br><small>JPG / PDF — μέγ. 10MB</small></p>
+        </div>
+        <input type="file" id="mF" accept=".jpg,.jpeg,.pdf" style="display:none" onchange="onFile(this.files[0])">
+        <div class="fprev" id="fprev">
+          <span id="fIco" style="font-size:1.4rem"></span>
+          <div style="flex:1"><div id="fName" style="font-size:.85rem;font-weight:600;color:var(--text)"></div><div id="fSize" style="font-size:.73rem;color:var(--dim)"></div></div>
+          <button onclick="clearF()" style="background:none;border:none;color:var(--danger);cursor:pointer;font-size:1.1rem">✕</button>
+        </div>
+      </div>
+    </div>
+    <div style="display:-webkit-flex;display:flex;gap:10px;margin-top:6px">
+      <button class="btn g" onclick="saveSch()">✓ Αποθήκευση</button>
+      <button class="btn r" onclick="closeModal()">✕ Ακύρωση</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<!-- Firebase -->
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAsRxg5-Rj1YzohYZfPH8g4Lzko_KmdeyE",
+  authDomain: "electroindex-ccaca.firebaseapp.com",
+  projectId: "electroindex-ccaca",
+  storageBucket: "electroindex-ccaca.firebasestorage.app",
+  messagingSenderId: "256707142236",
+  appId: "1:256707142236:web:f0af3136309eab1df0fc99"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+// ===== SVG THUMBS =====
+var SVGS = {
+  'Τροφοδοτικό':'<svg viewBox="0 0 220 130" style="width:100%;height:100%" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="65" x2="35" y2="65" stroke="#00d4ff" stroke-width="1.5"/><line x1="35" y1="48" x2="35" y2="82" stroke="#00d4ff" stroke-width="1.5"/><line x1="41" y1="48" x2="41" y2="82" stroke="#00d4ff" stroke-width="2"/><line x1="41" y1="65" x2="60" y2="65" stroke="#00d4ff" stroke-width="1.5"/><rect x="60" y="52" width="28" height="26" rx="2" stroke="#00d4ff" stroke-width="1.5"/><text x="65" y="69" font-size="9" fill="#00d4ff" font-family="monospace">SW</text><line x1="88" y1="65" x2="110" y2="65" stroke="#00d4ff" stroke-width="1.5"/><path d="M110 65 Q115 52 120 65 Q125 52 130 65 Q135 52 140 65 Q145 52 150 65" stroke="#00ff88" stroke-width="1.5" fill="none"/><line x1="150" y1="65" x2="170" y2="65" stroke="#00d4ff" stroke-width="1.5"/><line x1="170" y1="48" x2="170" y2="82" stroke="#00d4ff" stroke-width="1.5"/><line x1="176" y1="48" x2="176" y2="82" stroke="#00d4ff" stroke-width="2"/><line x1="176" y1="65" x2="200" y2="65" stroke="#00d4ff" stroke-width="1.5"/><rect x="200" y="52" width="18" height="26" rx="2" stroke="#00ff88" stroke-width="1.5"/><text x="5" y="57" font-size="8" fill="#5a7a9a" font-family="monospace">Vin</text><text x="182" y="57" font-size="8" fill="#00ff88" font-family="monospace">Vout</text><text x="92" y="48" font-size="7" fill="#5a7a9a" font-family="monospace">L1</text><line x1="35" y1="82" x2="200" y2="82" stroke="#00d4ff" stroke-width="1" stroke-dasharray="4,3"/></svg>',
+  'Ενισχυτής':'<svg viewBox="0 0 220 130" style="width:100%;height:100%" fill="none" xmlns="http://www.w3.org/2000/svg"><line x1="5" y1="65" x2="35" y2="65" stroke="#00ff88" stroke-width="1.5"/><line x1="35" y1="50" x2="35" y2="80" stroke="#00ff88" stroke-width="1.5"/><line x1="41" y1="50" x2="41" y2="80" stroke="#00ff88" stroke-width="2"/><line x1="41" y1="65" x2="60" y2="65" stroke="#00ff88" stroke-width="1.5"/><polygon points="60,40 60,90 110,65" stroke="#00ff88" stroke-width="1.5" fill="none"/><line x1="110" y1="65" x2="145" y2="65" stroke="#00ff88" stroke-width="1.5"/><line x1="145" y1="50" x2="145" y2="80" stroke="#00ff88" stroke-width="1.5"/><line x1="151" y1="50" x2="151" y2="80" stroke="#00ff88" stroke-width="2"/><line x1="151" y1="65" x2="185" y2="65" stroke="#00ff88" stroke-width="1.5"/><rect x="185" y="52" width="22" height="26" rx="2" stroke="#00ff88" stroke-width="1.5"/><text x="188" y="69" font-size="8" fill="#00ff88" font-family="monospace">LS</text><text x="72" y="68" font-size="10" fill="#00ff88" font-family="monospace">AMP</text><line x1="60" y1="20" x2="60" y2="40" stroke="#00d4ff" stroke-width="1.5"/><text x="53" y="17" font-size="8" fill="#00d4ff" font-family="monospace">+Vcc</text><text x="5" y="57" font-size="8" fill="#5a7a9a" font-family="monospace">IN</text></svg>',
+  'Microcontroller':'<svg viewBox="0 0 220 130" style="width:100%;height:100%" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="75" y="25" width="70" height="80" rx="4" stroke="#00d4ff" stroke-width="2"/><text x="93" y="68" font-size="10" fill="#00d4ff" font-family="monospace">MCU</text><text x="83" y="82" font-size="7" fill="#5a7a9a" font-family="monospace">ATmega328</text><line x1="50" y1="40" x2="75" y2="40" stroke="#00d4ff" stroke-width="1.5"/><line x1="50" y1="55" x2="75" y2="55" stroke="#00d4ff" stroke-width="1.5"/><line x1="50" y1="70" x2="75" y2="70" stroke="#00d4ff" stroke-width="1.5"/><line x1="50" y1="85" x2="75" y2="85" stroke="#00d4ff" stroke-width="1.5"/><text x="12" y="43" font-size="7" fill="#5a7a9a" font-family="monospace">VCC</text><text x="15" y="58" font-size="7" fill="#5a7a9a" font-family="monospace">GND</text><text x="17" y="73" font-size="7" fill="#5a7a9a" font-family="monospace">RST</text><line x1="145" y1="40" x2="170" y2="40" stroke="#00ff88" stroke-width="1.5"/><line x1="145" y1="55" x2="170" y2="55" stroke="#00ff88" stroke-width="1.5"/><line x1="145" y1="70" x2="170" y2="70" stroke="#00ff88" stroke-width="1.5"/><line x1="145" y1="85" x2="170" y2="85" stroke="#00ff88" stroke-width="1.5"/><text x="173" y="43" font-size="7" fill="#00ff88" font-family="monospace">D0</text><text x="173" y="58" font-size="7" fill="#00ff88" font-family="monospace">D1</text><text x="173" y="73" font-size="7" fill="#00ff88" font-family="monospace">A0</text></svg>',
+  'Αισθητήρας':'<svg viewBox="0 0 220 130" style="width:100%;height:100%" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="80" y="30" width="50" height="70" rx="3" stroke="#a78bfa" stroke-width="2"/><text x="90" y="62" font-size="9" fill="#a78bfa" font-family="monospace">DHT</text><text x="90" y="75" font-size="9" fill="#a78bfa" font-family="monospace"> 22</text><line x1="80" y1="45" x2="50" y2="45" stroke="#00d4ff" stroke-width="1.5"/><line x1="50" y1="45" x2="50" y2="20" stroke="#00d4ff" stroke-width="1.5"/><text x="42" y="16" font-size="8" fill="#00d4ff" font-family="monospace">3.3V</text><line x1="80" y1="65" x2="50" y2="65" stroke="#00ff88" stroke-width="1.5"/><line x1="50" y1="45" x2="50" y2="58" stroke="#00ff88" stroke-width="1.5"/><rect x="43" y="58" width="14" height="22" rx="2" stroke="#00ff88" stroke-width="1.5"/><text x="46" y="72" font-size="7" fill="#00ff88" font-family="monospace">10k</text><line x1="50" y1="80" x2="50" y2="65" stroke="#00ff88" stroke-width="1.5"/><line x1="50" y1="65" x2="15" y2="65" stroke="#00ff88" stroke-width="1.5"/><text x="2" y="61" font-size="7" fill="#00ff88" font-family="monospace">DATA</text><line x1="80" y1="85" x2="50" y2="85" stroke="#5a7a9a" stroke-width="1.5"/><line x1="50" y1="85" x2="50" y2="105" stroke="#5a7a9a" stroke-width="1.5"/><line x1="38" y1="105" x2="62" y2="105" stroke="#5a7a9a" stroke-width="1.5"/></svg>',
+  'RF':'<svg viewBox="0 0 220 130" style="width:100%;height:100%" fill="none" xmlns="http://www.w3.org/2000/svg"><rect x="15" y="45" width="45" height="45" rx="3" stroke="#ff6b35" stroke-width="1.5"/><text x="22" y="68" font-size="8" fill="#ff6b35" font-family="monospace">433M</text><text x="22" y="80" font-size="8" fill="#ff6b35" font-family="monospace">OSC</text><line x1="60" y1="67" x2="85" y2="67" stroke="#ff6b35" stroke-width="1.5"/><rect x="85" y="55" width="30" height="24" rx="2" stroke="#ff6b35" stroke-width="1.5"/><text x="90" y="70" font-size="7" fill="#ff6b35" font-family="monospace">MOD</text><line x1="115" y1="67" x2="135" y2="67" stroke="#ff6b35" stroke-width="1.5"/><path d="M135 67 Q139 57 143 67 Q147 57 151 67 Q155 57 159 67" stroke="#ff6b35" stroke-width="1.5" fill="none"/><line x1="159" y1="67" x2="175" y2="67" stroke="#ff6b35" stroke-width="1.5"/><line x1="175" y1="67" x2="175" y2="20" stroke="#ff6b35" stroke-width="2"/><line x1="175" y1="20" x2="205" y2="20" stroke="#ff6b35" stroke-width="2"/><path d="M210 10 Q217 15 210 20 Q217 25 210 30" stroke="#ff6b35" stroke-width="1.5" fill="none"/><text x="163" y="14" font-size="7" fill="#5a7a9a" font-family="monospace">ANT</text></svg>'
+};
+
+// ===== STATE =====
+var SCH = [];
+var CI = {};
+var NID = 1;
+var activeTag = '';
+var editID = null;
+var curFile = null;
+var curData = null;
+var ADMIN_PASS = 'admin:1234';
+
+// ===== FIREBASE LOAD =====
+async function loadAll() {
+  // Load contact info
+  try {
+    var ciDoc = await getDoc(doc(db, 'settings', 'contactInfo'));
+    if(ciDoc.exists()) { CI = ciDoc.data(); applyCI(); }
+  } catch(e){ console.log('CI load error:', e); }
+
+  // Load schematics
+  try {
+    var snap = await getDocs(collection(db, 'schematics'));
+    SCH = [];
+    snap.forEach(function(d){ SCH.push(Object.assign({id: d.id}, d.data())); });
+    SCH.sort(function(a,b){ return (a.order||0)-(b.order||0); });
+    NID = SCH.length + 1;
+    renderCards(SCH);
+    renderIdx(SCH);
+  } catch(e){ console.log('SCH load error:', e); document.getElementById('cards').innerHTML='<p style="color:var(--dim);padding:40px;text-align:center">Σφάλμα φόρτωσης. Ελέγξτε σύνδεση.</p>'; }
+
+  // Load admin pass if saved
+  try {
+    var passDoc = await getDoc(doc(db, 'settings', 'adminPass'));
+    if(passDoc.exists()) ADMIN_PASS = passDoc.data().value;
+  } catch(e){}
+}
+
+// ===== NAVIGATION =====
+window.goTo = function(id, btn) {
+  document.querySelectorAll('.sec').forEach(function(s){ s.classList.remove('on'); });
+  document.getElementById('sec-'+id).classList.add('on');
+  document.querySelectorAll('.nb').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+  if(id==='idx') renderIdx(SCH);
+};
+
+// ===== RENDER CARDS =====
+function getThumb(s) {
+  var src = s.fileURL || s.fileData;
+  if(src && s.fileType==='image/jpeg') return '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover">';
+  if(src && s.fileType==='application/pdf') return '<div style="display:-webkit-flex;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;height:100%"><span style="font-size:2.5rem">📄</span><span style="font-size:.7rem;color:var(--accent3);font-family:monospace">'+s.fileName+'</span></div>';
+  return SVGS[s.cat] || SVGS['Microcontroller'];
+}
+
+function renderCards(list) {
+  var g = document.getElementById('cards');
+  if(!list.length){ g.innerHTML='<p style="color:var(--dim);padding:60px;text-align:center;width:100%">Δεν βρέθηκαν σχέδια.</p>'; return; }
+  g.innerHTML = '<div class="grid">'+list.map(function(s){
+    var hasDl = !!(s.fileURL || s.fileData);
+    return '<div class="card">'+
+      '<div class="cthumb">'+getThumb(s)+'<div class="cbadge'+(s.isNew?' new':'')+'">'+( s.isNew?'NEW':s.ver)+'</div></div>'+
+      '<div class="cbody">'+
+        '<div class="ccat">'+s.cat+'</div>'+
+        '<div class="ctitle">'+s.title+'</div>'+
+        '<div class="cdesc">'+s.desc+'</div>'+
+        '<div class="cmeta"><span class="ccode">'+s.code+'</span><span>'+s.date+'</span></div>'+
+        '<div class="cbtns">'+
+          '<button class="cbtn" onclick="viewF(\''+s.id+'\')">🔍 Προβολή</button>'+
+          (hasDl
+            ? '<button class="cbtn dl" onclick="dlF(\''+s.id+'\')">⬇ '+(s.fileType==='application/pdf'?'PDF':'JPG')+'</button>'
+            : '<button class="cbtn dl" onclick="dlSVG(\''+s.id+'\')">⬇ SVG</button>'
+          )+
+        '</div>'+
+      '</div>'+
+    '</div>';
+  }).join('')+'</div>';
+}
+
+window.filterCards = function() {
+  var q = document.getElementById('q').value.toLowerCase();
+  var f = document.getElementById('cf').value;
+  renderCards(SCH.filter(function(s){
+    return (!q||s.title.toLowerCase().includes(q)||s.code.toLowerCase().includes(q))
+        && (!f||s.cat===f) && (!activeTag||s.cat===activeTag);
+  }));
+};
+
+window.setTag = function(el, tag) {
+  activeTag = tag;
+  document.querySelectorAll('.tag').forEach(function(t){ t.classList.remove('on'); });
+  el.classList.add('on');
+  window.filterCards();
+};
+
+// ===== INDEX =====
+function renderIdx(list) {
+  document.getElementById('idxBody').innerHTML = list.map(function(s,i){
+    return '<tr><td style="color:var(--dim)">'+(i+1)+'</td>'+
+      '<td><span class="ccode">'+s.code+'</span></td>'+
+      '<td>'+s.title+'</td><td>'+s.cat+'</td>'+
+      '<td style="font-family:monospace;color:var(--accent)">'+s.ver+'</td>'+
+      '<td style="color:var(--dim)">'+s.date+'</td>'+
+      '<td>'+(s.fileData?'<span style="color:var(--accent2)">✓ '+(s.fileType==='application/pdf'?'PDF':'JPG')+'</span>':'<span style="color:var(--dim)">SVG</span>')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+window.filterIdx = function() {
+  var q = document.getElementById('iq').value.toLowerCase();
+  renderIdx(SCH.filter(function(s){ return !q||s.title.toLowerCase().includes(q)||s.code.toLowerCase().includes(q); }));
+};
+
+// ===== CONTACT =====
+function applyCI() {
+  var n = [(CI.fn||''),(CI.ln||'')].filter(Boolean).join(' ');
+  document.getElementById('d-name').textContent = n||'—';
+  var ph=document.getElementById('d-phone'); ph.textContent=CI.ph||'—'; ph.href=CI.ph?'tel:'+CI.ph.replace(/\s/g,''):'#';
+  var mb=document.getElementById('d-mobile'); mb.textContent=CI.mb||'—'; mb.href=CI.mb?'tel:'+CI.mb.replace(/\s/g,''):'#';
+  document.getElementById('d-fax').textContent=CI.fx||'—';
+  var e1=document.getElementById('d-email1'); e1.textContent=CI.e1||'—'; e1.href=CI.e1?'mailto:'+CI.e1:'#';
+  var e2=document.getElementById('d-email2'); e2.textContent=CI.e2||'—'; e2.href=CI.e2?'mailto:'+CI.e2:'#';
+  document.getElementById('d-web').textContent=CI.wb||'—';
+  document.getElementById('d-addr').textContent=CI.ad||'—';
+  document.getElementById('d-hours').textContent=CI.hr||'—';
+}
+
+window.loadCIFields = function() {
+  document.getElementById('ci-fn').value=CI.fn||'';
+  document.getElementById('ci-ln').value=CI.ln||'';
+  document.getElementById('ci-ph').value=CI.ph||'';
+  document.getElementById('ci-mb').value=CI.mb||'';
+  document.getElementById('ci-fx').value=CI.fx||'';
+  document.getElementById('ci-e1').value=CI.e1||'';
+  document.getElementById('ci-e2').value=CI.e2||'';
+  document.getElementById('ci-wb').value=CI.wb||'';
+  document.getElementById('ci-ad').value=CI.ad||'';
+  document.getElementById('ci-hr').value=CI.hr||'';
+};
+
+window.saveCI = async function() {
+  CI = {
+    fn:document.getElementById('ci-fn').value.trim(),
+    ln:document.getElementById('ci-ln').value.trim(),
+    ph:document.getElementById('ci-ph').value.trim(),
+    mb:document.getElementById('ci-mb').value.trim(),
+    fx:document.getElementById('ci-fx').value.trim(),
+    e1:document.getElementById('ci-e1').value.trim(),
+    e2:document.getElementById('ci-e2').value.trim(),
+    wb:document.getElementById('ci-wb').value.trim(),
+    ad:document.getElementById('ci-ad').value.trim(),
+    hr:document.getElementById('ci-hr').value.trim()
+  };
+  try {
+    await setDoc(doc(db,'settings','contactInfo'), CI);
+    applyCI();
+    toast('✓ Αποθηκεύτηκε στο Firebase!');
+  } catch(e){ toast('✗ Σφάλμα αποθήκευσης'); }
+};
+
+window.sendMsg = function() { toast('✉ Μήνυμα στάλθηκε!'); };
+
+// ===== ADMIN LOGIN =====
+window.doLogin = function() {
+  var u = document.getElementById('auser').value.trim();
+  var p = document.getElementById('apass').value;
+  var expected = ADMIN_PASS.split(':');
+  if(u===expected[0] && p===expected[1]) {
+    document.getElementById('loginBox').style.display='none';
+    document.getElementById('dashBox').style.display='block';
+    renderAdm();
+    toast('✓ Σύνδεση επιτυχής');
+  } else {
+    toast('✗ Λάθος στοιχεία');
+  }
+};
+
+window.doLogout = function() {
+  document.getElementById('loginBox').style.display='block';
+  document.getElementById('dashBox').style.display='none';
+  document.getElementById('auser').value='';
+  document.getElementById('apass').value='';
+};
+
+window.aTab = function(t) {
+  document.querySelectorAll('.adm-tab').forEach(function(x){ x.classList.remove('on'); });
+  document.getElementById('at-'+t).classList.add('on');
+  document.querySelectorAll('.atabs .nb').forEach(function(b){ b.classList.remove('on'); });
+  document.getElementById('tab-'+t).classList.add('on');
+  if(t==='ci') window.loadCIFields();
+};
+
+function renderAdm() {
+  document.getElementById('sTotal').textContent = SCH.length;
+  document.getElementById('sCats').textContent = SCH.filter(function(s){ return s.fileData; }).length;
+  document.getElementById('sNew').textContent = SCH.filter(function(s){ return s.isNew; }).length;
+  document.getElementById('admBody').innerHTML = SCH.map(function(s){
+    return '<tr>'+
+      '<td><span class="ccode">'+s.code+'</span></td>'+
+      '<td>'+s.title+'</td><td>'+s.cat+'</td>'+
+      '<td>'+(s.fileData?'<span style="color:var(--accent2)">✓ '+(s.fileType==='application/pdf'?'PDF':'JPG')+'</span>':'<span style="color:var(--dim)">SVG</span>')+'</td>'+
+      '<td style="display:flex;gap:6px;flex-wrap:wrap">'+
+        '<button class="cbtn" style="padding:5px 10px" onclick="editSch(\''+s.id+'\')">✏️</button>'+
+        '<button class="cbtn" style="padding:5px 10px;border-color:var(--danger);color:var(--danger)" onclick="delSch(\''+s.id+'\')">🗑</button>'+
+      '</td></tr>';
+  }).join('');
+}
+
+// ===== SCHEMATICS CRUD =====
+window.openModal = function() {
+  editID=null;
+  document.getElementById('mhead').textContent='➕ Νέο Σχέδιο';
+  document.getElementById('mT').value='';
+  document.getElementById('mD').value='';
+  document.getElementById('mV').value='v1.0';
+  clearF();
+  document.getElementById('modal').classList.add('show');
+};
+
+window.closeModal = function() { document.getElementById('modal').classList.remove('show'); };
+
+window.editSch = function(id) {
+  var s = SCH.find(function(x){ return x.id===id; });
+  if(!s) return;
+  editID=id;
+  document.getElementById('mhead').textContent='✏️ Επεξεργασία';
+  document.getElementById('mT').value=s.title;
+  document.getElementById('mC').value=s.cat;
+  document.getElementById('mV').value=s.ver;
+  document.getElementById('mD').value=s.desc;
+  clearF();
+  if(s.fileData){ curData=s.fileData; curFile={name:s.fileName,type:s.fileType}; showFPrev(s.fileName,s.fileType,0); }
+  document.getElementById('modal').classList.add('show');
+};
+
+window.delSch = async function(id) {
+  if(!confirm('Να διαγραφεί το σχέδιο;')) return;
+  try {
+    await deleteDoc(doc(db,'schematics',id));
+    SCH = SCH.filter(function(x){ return x.id!==id; });
+    renderAdm(); renderCards(SCH); renderIdx(SCH);
+    toast('🗑 Διαγράφηκε');
+  } catch(e){ toast('✗ Σφάλμα διαγραφής'); }
+};
+
+window.saveSch = async function() {
+  var title = document.getElementById('mT').value.trim();
+  if(!title){ toast('⚠ Εισάγετε τίτλο'); return; }
+  var cat=document.getElementById('mC').value;
+  var desc=document.getElementById('mD').value;
+  var ver=document.getElementById('mV').value||'v1.0';
+  var today=new Date().toISOString().slice(0,10);
+  toast('⏳ Αποθήκευση...');
+  try {
+    var fileURL = null;
+    var fileName = null;
+    var fileType = null;
+
+    // Upload file to Firebase Storage if exists
+    if(curData && curFile) {
+      toast('⏳ Ανέβασμα αρχείου...');
+      var fileId = 'sch_'+ Date.now();
+      var ext = curFile.type==='application/pdf' ? '.pdf' : '.jpg';
+      var storageRef = ref(storage, 'schematics/' + fileId + ext);
+      await uploadString(storageRef, curData, 'data_url');
+      fileURL = await getDownloadURL(storageRef);
+      fileName = curFile.name;
+      fileType = curFile.type;
+    }
+
+    if(editID) {
+      var s=SCH.find(function(x){ return x.id===editID; });
+      var upd={title:title,cat:cat,desc:desc,ver:ver};
+      if(fileURL){ upd.fileURL=fileURL; upd.fileName=fileName; upd.fileType=fileType; upd.fileData=fileURL; }
+      await updateDoc(doc(db,'schematics',editID), upd);
+      Object.assign(s,upd);
+      toast('✓ Ενημερώθηκε!');
+    } else {
+      var code='SCH-'+String(NID).padStart(3,'0'); NID++;
+      var newS={code:code,title:title,cat:cat,desc:desc,ver:ver,date:today,isNew:true,order:SCH.length,
+                fileURL:fileURL,fileData:fileURL,fileName:fileName,fileType:fileType};
+      var docRef=await addDoc(collection(db,'schematics'), newS);
+      SCH.push(Object.assign({id:docRef.id},newS));
+      toast('✓ Προστέθηκε!');
+    }
+    closeModal(); clearF();
+    renderCards(SCH); renderIdx(SCH); renderAdm();
+  } catch(e){ console.log(e); toast('✗ Σφάλμα: '+e.message); }
+};
+
+// ===== FILE UPLOAD =====
+window.onDrop = function(e) {
+  e.preventDefault();
+  document.getElementById('dz').style.borderColor='var(--border)';
+  if(e.dataTransfer.files[0]) onFile(e.dataTransfer.files[0]);
+};
+
+window.onFile = function(file) {
+  if(!file) return;
+  if(file.type!=='image/jpeg'&&file.type!=='application/pdf'){ toast('⚠ Μόνο JPG ή PDF!'); return; }
+  if(file.size>10*1024*1024){ toast('⚠ Μέγιστο 10MB!'); return; }
+  curFile=file;
+  var r=new FileReader();
+  r.onload=function(e){ curData=e.target.result; showFPrev(file.name,file.type,file.size); };
+  r.readAsDataURL(file);
+};
+
+function showFPrev(name,type,size) {
+  document.getElementById('fprev').classList.add('show');
+  document.getElementById('fIco').textContent=type==='application/pdf'?'📄':'🖼️';
+  document.getElementById('fName').textContent=name;
+  document.getElementById('fSize').textContent=size?(size/1024).toFixed(1)+' KB':(type==='application/pdf'?'PDF':'JPG');
+  document.getElementById('dzLabel').innerHTML='<span style="color:var(--accent2)">✓ Αρχείο επιλέχθηκε</span>';
+}
+
+function clearF() {
+  curFile=null; curData=null;
+  document.getElementById('mF').value='';
+  document.getElementById('fprev').classList.remove('show');
+  document.getElementById('dzLabel').innerHTML='Σύρε αρχείο ή κάνε κλικ<br><small>JPG / PDF — μέγ. 10MB</small>';
+}
+window.clearF = clearF;
+
+// ===== VIEW / DOWNLOAD =====
+window.viewF = function(id) {
+  var s=SCH.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var src = s.fileURL || s.fileData;
+  if(src) {
+    if(s.fileType==='application/pdf') window.open(src,'_blank');
+    else window.open(src,'_blank');
+  } else {
+    var svg=SVGS[s.cat]||SVGS['Microcontroller'];
+    var w=window.open('','_blank');
+    w.document.write('<html><body style="margin:0;background:#060d1a;display:flex;align-items:center;justify-content:center;min-height:100vh">'+svg+'</body></html>');
+  }
+};
+
+window.dlF = function(id) {
+  var s=SCH.find(function(x){ return x.id===id; });
+  var src = s ? (s.fileURL || s.fileData) : null;
+  if(!s||!src) return;
+  window.open(src,'_blank');
+  toast('⬇ Άνοιγμα αρχείου...');
+};
+
+window.dlSVG = function(id) {
+  var s=SCH.find(function(x){ return x.id===id; });
+  if(!s) return;
+  var blob=new Blob([SVGS[s.cat]||SVGS['Microcontroller']],{type:'image/svg+xml'});
+  var url=URL.createObjectURL(blob);
+  var a=document.createElement('a'); a.href=url; a.download=s.code+'.svg';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  toast('⬇ '+s.code+'.svg');
+};
+
+// ===== SETTINGS =====
+window.setSP = function(n,btn) {
+  ['gen','disp','notif','sec2'].forEach(function(x){
+    var el=document.getElementById('sp-'+x);
+    if(el) el.classList.toggle('hidden',x!==n);
+  });
+  document.querySelectorAll('.sni').forEach(function(b){ b.classList.remove('on'); });
+  btn.classList.add('on');
+};
+
+window.toggleBg = function(el) {
+  el.classList.toggle('on');
+  document.getElementById('pcb').style.opacity=el.classList.contains('on')?'.06':'0';
+};
+
+window.changePass = async function() {
+  var old=document.getElementById('oldPass').value;
+  var nw=document.getElementById('newPass').value;
+  var cf=document.getElementById('confPass').value;
+  var expected=ADMIN_PASS.split(':');
+  if(old!==expected[1]){ toast('✗ Λάθος τρέχον κωδικός'); return; }
+  if(nw!==cf){ toast('✗ Οι κωδικοί δεν ταιριάζουν'); return; }
+  if(nw.length<4){ toast('⚠ Ελάχιστο 4 χαρακτήρες'); return; }
+  ADMIN_PASS=expected[0]+':'+nw;
+  try {
+    await setDoc(doc(db,'settings','adminPass'),{value:ADMIN_PASS});
+    toast('✓ Κωδικός άλλαξε!');
+  } catch(e){ toast('✗ Σφάλμα αποθήκευσης'); }
+};
+
+// ===== TOAST =====
+window.toast = function(msg) {
+  var t=document.getElementById('toastEl');
+  t.textContent=msg; t.classList.add('show');
+  setTimeout(function(){ t.classList.remove('show'); },2800);
+};
+
+// ===== INIT =====
+loadAll();
+</script>
+</body>
+</html>
