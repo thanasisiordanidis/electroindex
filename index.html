@@ -401,6 +401,7 @@ nav{display:-webkit-flex;display:flex;gap:6px;flex-wrap:wrap;}
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getFirestore, doc, getDoc, setDoc, collection, getDocs, addDoc, updateDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+import { getStorage, ref, uploadString, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-storage.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyAsRxg5-Rj1YzohYZfPH8g4Lzko_KmdeyE",
@@ -413,6 +414,7 @@ const firebaseConfig = {
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+const storage = getStorage(app);
 
 // ===== SVG THUMBS =====
 var SVGS = {
@@ -470,8 +472,9 @@ window.goTo = function(id, btn) {
 
 // ===== RENDER CARDS =====
 function getThumb(s) {
-  if(s.fileData && s.fileType==='image/jpeg') return '<img src="'+s.fileData+'" style="width:100%;height:100%;object-fit:cover">';
-  if(s.fileData && s.fileType==='application/pdf') return '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;height:100%"><span style="font-size:2.5rem">📄</span><span style="font-size:.7rem;color:var(--accent3);font-family:monospace">'+s.fileName+'</span></div>';
+  var src = s.fileURL || s.fileData;
+  if(src && s.fileType==='image/jpeg') return '<img src="'+src+'" style="width:100%;height:100%;object-fit:cover">';
+  if(src && s.fileType==='application/pdf') return '<div style="display:-webkit-flex;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;width:100%;height:100%"><span style="font-size:2.5rem">📄</span><span style="font-size:.7rem;color:var(--accent3);font-family:monospace">'+s.fileName+'</span></div>';
   return SVGS[s.cat] || SVGS['Microcontroller'];
 }
 
@@ -479,7 +482,7 @@ function renderCards(list) {
   var g = document.getElementById('cards');
   if(!list.length){ g.innerHTML='<p style="color:var(--dim);padding:60px;text-align:center;width:100%">Δεν βρέθηκαν σχέδια.</p>'; return; }
   g.innerHTML = '<div class="grid">'+list.map(function(s){
-    var hasDl = !!s.fileData;
+    var hasDl = !!(s.fileURL || s.fileData);
     return '<div class="card">'+
       '<div class="cthumb">'+getThumb(s)+'<div class="cbadge'+(s.isNew?' new':'')+'">'+( s.isNew?'NEW':s.ver)+'</div></div>'+
       '<div class="cbody">'+
@@ -674,24 +677,40 @@ window.saveSch = async function() {
   var today=new Date().toISOString().slice(0,10);
   toast('⏳ Αποθήκευση...');
   try {
+    var fileURL = null;
+    var fileName = null;
+    var fileType = null;
+
+    // Upload file to Firebase Storage if exists
+    if(curData && curFile) {
+      toast('⏳ Ανέβασμα αρχείου...');
+      var fileId = 'sch_'+ Date.now();
+      var ext = curFile.type==='application/pdf' ? '.pdf' : '.jpg';
+      var storageRef = ref(storage, 'schematics/' + fileId + ext);
+      await uploadString(storageRef, curData, 'data_url');
+      fileURL = await getDownloadURL(storageRef);
+      fileName = curFile.name;
+      fileType = curFile.type;
+    }
+
     if(editID) {
       var s=SCH.find(function(x){ return x.id===editID; });
       var upd={title:title,cat:cat,desc:desc,ver:ver};
-      if(curData){ upd.fileData=curData; upd.fileName=curFile.name; upd.fileType=curFile.type; }
+      if(fileURL){ upd.fileURL=fileURL; upd.fileName=fileName; upd.fileType=fileType; upd.fileData=fileURL; }
       await updateDoc(doc(db,'schematics',editID), upd);
       Object.assign(s,upd);
       toast('✓ Ενημερώθηκε!');
     } else {
       var code='SCH-'+String(NID).padStart(3,'0'); NID++;
       var newS={code:code,title:title,cat:cat,desc:desc,ver:ver,date:today,isNew:true,order:SCH.length,
-                fileData:curData||null,fileName:curFile?curFile.name:null,fileType:curFile?curFile.type:null};
-      var ref=await addDoc(collection(db,'schematics'), newS);
-      SCH.push(Object.assign({id:ref.id},newS));
+                fileURL:fileURL,fileData:fileURL,fileName:fileName,fileType:fileType};
+      var docRef=await addDoc(collection(db,'schematics'), newS);
+      SCH.push(Object.assign({id:docRef.id},newS));
       toast('✓ Προστέθηκε!');
     }
     closeModal(); clearF();
     renderCards(SCH); renderIdx(SCH); renderAdm();
-  } catch(e){ console.log(e); toast('✗ Σφάλμα. Ελέγξτε Firebase rules.'); }
+  } catch(e){ console.log(e); toast('✗ Σφάλμα: '+e.message); }
 };
 
 // ===== FILE UPLOAD =====
@@ -731,10 +750,10 @@ window.clearF = clearF;
 window.viewF = function(id) {
   var s=SCH.find(function(x){ return x.id===id; });
   if(!s) return;
-  if(s.fileData) {
-    var w=window.open('','_blank');
-    if(s.fileType==='application/pdf') w.document.write('<html><body style="margin:0"><iframe src="'+s.fileData+'" width="100%" height="100%" style="border:none;position:fixed;inset:0"></iframe></body></html>');
-    else w.document.write('<html><body style="margin:0;background:#000;display:flex;align-items:center;justify-content:center;min-height:100vh"><img src="'+s.fileData+'" style="max-width:100%;max-height:100vh"></body></html>');
+  var src = s.fileURL || s.fileData;
+  if(src) {
+    if(s.fileType==='application/pdf') window.open(src,'_blank');
+    else window.open(src,'_blank');
   } else {
     var svg=SVGS[s.cat]||SVGS['Microcontroller'];
     var w=window.open('','_blank');
@@ -744,11 +763,10 @@ window.viewF = function(id) {
 
 window.dlF = function(id) {
   var s=SCH.find(function(x){ return x.id===id; });
-  if(!s||!s.fileData) return;
-  var a=document.createElement('a'); a.href=s.fileData;
-  a.download=s.fileName||s.code+(s.fileType==='application/pdf'?'.pdf':'.jpg');
-  document.body.appendChild(a); a.click(); document.body.removeChild(a);
-  toast('⬇ Λήψη: '+a.download);
+  var src = s ? (s.fileURL || s.fileData) : null;
+  if(!s||!src) return;
+  window.open(src,'_blank');
+  toast('⬇ Άνοιγμα αρχείου...');
 };
 
 window.dlSVG = function(id) {
